@@ -6,19 +6,19 @@ from sklearn.preprocessing import MinMaxScaler
 
 
 # Configurations
-epochs = 100
+epochs = 300
 batch_size = 32
 algorithm = 'adam'
 timesteps = 180
-dataset_file = os.path.join('data', 'GOOGL.csv')
-folder = 'lstm256x4'
+dataset_file = 'GOOGL.csv'
+folder = 'lstm256x5'
 
 # Folder to save
-folder += '-t%d-%s-e%d' % (timesteps, algorithm, epochs)
+folder += '-t%d-%s-e%d (%s)' % (timesteps, algorithm, epochs, dataset_file)
 os.makedirs(folder, exist_ok=True)
 
 # Preparing the dataset
-dataset = pd.read_csv(dataset_file)
+dataset = pd.read_csv(os.path.join('data', dataset_file))
 training_len = len(dataset) - timesteps
 
 dataset_train = dataset.iloc[:training_len, 1:2].values
@@ -53,6 +53,9 @@ regressor.add(Dropout(0.2))
 regressor.add(LSTM(256, return_sequences=True))
 regressor.add(Dropout(0.2))
 
+regressor.add(LSTM(256, return_sequences=True))
+regressor.add(Dropout(0.2))
+
 regressor.add(LSTM(256))
 regressor.add(Dropout(0.2))
 
@@ -65,7 +68,7 @@ with open(os.path.join(folder, 'model.yaml'), 'w') as f:
     f.write(regressor.to_yaml())
 
 # Train the model
-regressor.fit(X_train, y_train, batch_size=batch_size, epochs=1)
+regressor.fit(X_train, y_train, batch_size=batch_size, epochs=epochs)
 
 # Save the trained weights
 regressor.save_weights(os.path.join(folder, 'weights.hdf5'))
