@@ -4,15 +4,21 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 
-epochs = 100
-timesteps = 180
-batch_size = 32
-folder = 'lstm256x4-t180-adam-e100'
 
+# Configurations
+epochs = 100
+batch_size = 32
+algorithm = 'adam'
+timesteps = 180
+dataset_file = os.path.join('data', 'GOOGL.csv')
+folder = 'lstm256x4'
+
+# Folder to save
+folder += '-t%d-%s-e%d' % (timesteps, algorithm, epochs)
 os.makedirs(folder, exist_ok=True)
 
 # Preparing the dataset
-dataset = pd.read_csv('GOOGL.csv')
+dataset = pd.read_csv(dataset_file)
 training_len = len(dataset) - timesteps
 
 dataset_train = dataset.iloc[:training_len, 1:2].values
@@ -21,29 +27,16 @@ np.save(os.path.join(folder, 'dataset_train.npy'), dataset_train)
 dataset_test = dataset.iloc[training_len - timesteps:, 1:2].values
 np.save(os.path.join(folder, 'dataset_test.npy'), dataset_test)
 
-# ... feature scaling
+# Feature scaling
 sc = MinMaxScaler()
 training_set = sc.fit_transform(dataset_train)
 testing_set = sc.transform(dataset_test)
 
 # Populate the input and outputs for training
-y_train = []
-X_train = []
-for i in range(timesteps, len(training_set)):
-    X_train.append(training_set[i - timesteps: i, 0])
-    y_train.append(training_set[i, 0])
-
-y_train = np.array(y_train)
-X_train = np.array(X_train)
-X_train = np.reshape(X_train, (len(X_train), timesteps, 1))
-
-# Populate the input and outputs for testing
-X_test = []
-for i in range(timesteps, len(testing_set)):
-    X_test.append(testing_set[i - timesteps: i, 0])
-
-X_test = np.array(X_test)
-X_test = np.reshape(X_test, (X_test.shape[0], X_test.shape[1], 1))
+from utils import generate_inputs
+y_train = training_set[timesteps:].flatten()
+X_train = generate_inputs(training_set, timesteps)
+X_test = generate_inputs(testing_set, timesteps)
 
 # Build the RNN model
 from keras.models import Sequential
@@ -65,11 +58,16 @@ regressor.add(Dropout(0.2))
 
 regressor.add(Dense(1))
 
-regressor.compile('adam', loss='mean_squared_error')
-with f as open(os.path.join(folder, 'model.yaml')):
+regressor.compile(algorithm, loss='mean_squared_error')
+
+# Save the model config
+with open(os.path.join(folder, 'model.yaml'), 'w') as f:
     f.write(regressor.to_yaml())
 
-regressor.fit(X_train, y_train, batch_size=batch_size, epochs=epochs)
+# Train the model
+regressor.fit(X_train, y_train, batch_size=batch_size, epochs=1)
+
+# Save the trained weights
 regressor.save_weights(os.path.join(folder, 'weights.hdf5'))
 
 # Predict the results
@@ -79,15 +77,6 @@ predicted_stock = sc.inverse_transform(predicted_stock)
 predicted_stock = predicted_stock.flatten()
 real_stock = dataset.iloc[training_len:, 1].values
 
-rmse = np.sqrt(np.mean((predicted_stock - real_stock) ** 2))
-print('RMSE =', rmse)
-
 # Visualize the prediction
-import matplotlib.pyplot as plt
-plt.plot(real_stock, color='red', label='Real Stock Price')
-plt.plot(predicted_stock, color='blue', label='Predicted Price')
-plt.title('Stock Price Prediction')
-plt.xlabel('Time (days)')
-plt.ylabel('Stock Price')
-plt.legend()
-plt.show()
+from utils import visualize_results
+visualize_results(real_stock, predicted_stock)
