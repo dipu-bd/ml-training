@@ -7,7 +7,7 @@ from sklearn.preprocessing import MinMaxScaler
 from utils import generate_inputs, visualize_results
 
 # The source folder
-folder = 'lstm256x4-t180-adam-e1'
+folder = 'lstm256x4-t180-adam-e100'
 
 if not os.path.exists(folder):
     print('Folder does not exists')
