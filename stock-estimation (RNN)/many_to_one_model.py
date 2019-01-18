@@ -6,12 +6,12 @@ from sklearn.preprocessing import MinMaxScaler
 
 
 # Configurations
-epochs = 300
+epochs = 100
 batch_size = 32
 algorithm = 'adam'
-timesteps = 180
+timesteps = 720
 dataset_file = 'GOOGL.csv'
-folder = 'lstm256x5'
+folder = 'lstm256x4'
 
 # Folder to save
 folder += '-t%d-%s-e%d (%s)' % (timesteps, algorithm, epochs, dataset_file)
@@ -19,7 +19,7 @@ os.makedirs(folder, exist_ok=True)
 
 # Preparing the dataset
 dataset = pd.read_csv(os.path.join('data', dataset_file))
-training_len = len(dataset) - timesteps
+training_len = len(dataset) - 250
 
 dataset_train = dataset.iloc[:training_len, 1:2].values
 np.save(os.path.join(folder, 'dataset_train.npy'), dataset_train)
@@ -53,9 +53,6 @@ regressor.add(Dropout(0.2))
 regressor.add(LSTM(256, return_sequences=True))
 regressor.add(Dropout(0.2))
 
-regressor.add(LSTM(256, return_sequences=True))
-regressor.add(Dropout(0.2))
-
 regressor.add(LSTM(256))
 regressor.add(Dropout(0.2))
 
@@ -67,10 +64,8 @@ regressor.compile(algorithm, loss='mean_squared_error')
 with open(os.path.join(folder, 'model.yaml'), 'w') as f:
     f.write(regressor.to_yaml())
 
-# Train the model
+# Train the model and save progress
 regressor.fit(X_train, y_train, batch_size=batch_size, epochs=epochs)
-
-# Save the trained weights
 regressor.save_weights(os.path.join(folder, 'weights.hdf5'))
 
 # Predict the results

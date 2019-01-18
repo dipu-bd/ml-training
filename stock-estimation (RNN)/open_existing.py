@@ -7,7 +7,7 @@ from sklearn.preprocessing import MinMaxScaler
 from utils import generate_inputs, visualize_results
 
 # The source folder
-folder = 'lstm256x4-t180-adam-e100'
+folder = 'lstm256x4-t720-adam-e1 (GOOGL.csv)'
 
 if not os.path.exists(folder):
     print('Folder does not exists')
@@ -38,7 +38,10 @@ X_train = generate_inputs(training_set, timesteps)
 X_test = generate_inputs(testing_set, timesteps)
 
 # Retrain the network
-# regressor.fit(X_train, y_train, batch_size=32, epochs=10)
+epochs = 10
+batch_size = 32
+#regressor.fit(X_train, y_train, batch_size=batch_size, epochs=epochs)
+regressor.save_weights(os.path.join(folder, 'weights.hdf5'))
 
 # Predict the results
 predicted_stock = regressor.predict(X_test)
